@@ -14,46 +14,70 @@ import com.mballem.demoparkapi.web.dto.UsuarioResponseDto;
 import com.mballem.demoparkapi.web.dto.UsuarioSenhaDto;
 import com.mballem.demoparkapi.web.exception.ErrorMessage;
 
+// Anotação incluindo uma configuração, executando um tomcat em uma porta randômica de testes
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+// Anotação para executar um script de insert antes de começar os testes, adicionando os parâmetros script e executionPhase
 @Sql(scripts = "/sql/usuarios/usuarios-insert.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+// Anotação para executar um escript de delete depois dos testes, zerando o banco
 @Sql(scripts = "/sql/usuarios/usuarios-delete.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class UsuarioIT {
+    // Objeto injetado
     @Autowired
     WebTestClient testClient;
 
+    // A annotation Test
     @Test
+    // Cria uma função pública
     public void createUsuario_ComUsernameEPasswordValidos_RetornarUsuarioCriadoComStatus201(){
+        // Como o post devolve um body, então a reposta vai ser um dto, é somente um conjunto de informações
         UsuarioResponseDto responseBody = testClient
+            // Vai ser um post
             .post()
+            // Na url específica
             .uri("/api/v1/usuarios")
+            // Passando um json
             .contentType(MediaType.APPLICATION_JSON)
+            // Com o seguinte Body
             .bodyValue(new UsuarioCreateDto("tody@email.com", "123456"))
             .exchange()
+            // Com o status de criado
             .expectStatus().isCreated()
+            // Recebe um body de resposta
             .expectBody(UsuarioResponseDto.class)
+            // retorna o resultado com o responseBody
             .returnResult().getResponseBody();
-
+        
+        // Com a informação anterior, fazemos os testes, o primeiro é se não é nulo
         org.assertj.core.api.Assertions.assertThat(responseBody).isNotNull();
+        // O segundo é se o ID não é nulo
         org.assertj.core.api.Assertions.assertThat(responseBody.getId()).isNotNull();
+        // O terceiro é para saber se o username foi o mesmo que foi criado anteriormente
         org.assertj.core.api.Assertions.assertThat(responseBody.getUsername()).isEqualTo("tody@email.com");
+        // E o último testa se ele criou a role com o nome de cliente (que foi definido no projeto)
         org.assertj.core.api.Assertions.assertThat(responseBody.getRole()).isEqualTo("CLIENTE");
     }
 
     @Test
     public void createUsuario_ComUsernameInvalido_RetornaErrorMessageStatus422(){
+        // Deve retornar um erro
         ErrorMessage responseBody = testClient
             .post()
             .uri("/api/v1/usuarios")
             .contentType(MediaType.APPLICATION_JSON)
+            // Passando informações inválidas
             .bodyValue(new UsuarioCreateDto("", "123456"))
             .exchange()
+            // Status de erro
             .expectStatus().isEqualTo(422)
+            // Retorna o erro
             .expectBody(ErrorMessage.class)
             .returnResult().getResponseBody();
 
         org.assertj.core.api.Assertions.assertThat(responseBody).isNotNull();
+        // Verificando se ele está retornando o erro na validação
         org.assertj.core.api.Assertions.assertThat(responseBody.getStatus()).isEqualTo(422);
         
+        // Outro exemplo de erro
         responseBody = testClient
             .post()
             .uri("/api/v1/usuarios")
@@ -67,6 +91,7 @@ public class UsuarioIT {
         org.assertj.core.api.Assertions.assertThat(responseBody).isNotNull();
         org.assertj.core.api.Assertions.assertThat(responseBody.getStatus()).isEqualTo(422);
         
+        // Outro exemplo de erro
         responseBody = testClient
             .post()
             .uri("/api/v1/usuarios")
@@ -142,9 +167,12 @@ public class UsuarioIT {
     @Test
     public void buscarUsuario_ComIdExistente_RetornarUsuarioComStatus200(){
         UsuarioResponseDto responseBody = testClient
+            // Testar o get 
             .get()
             .uri("/api/v1/usuarios/100")
+            // Como não é preciso passar um valor no Body e nem o tipo, não se tem aqui
             .exchange()
+            // Verifica se deu tudo certo
             .expectStatus().isOk()
             .expectBody(UsuarioResponseDto.class)
             .returnResult().getResponseBody();
@@ -155,6 +183,7 @@ public class UsuarioIT {
         org.assertj.core.api.Assertions.assertThat(responseBody.getRole()).isEqualTo("ADMIN");
     
     }
+
     @Test
     public void buscarUsuario_ComIdInexistente_RetornarUsuarioComStatus404(){
         ErrorMessage responseBody = testClient
@@ -279,9 +308,6 @@ public class UsuarioIT {
 
         org.assertj.core.api.Assertions.assertThat(responseBody).isNotNull();
         org.assertj.core.api.Assertions.assertThat(responseBody.size()).isEqualTo(3);
-        // org.assertj.core.api.Assertions.assertThat(responseBody.getId()).isEqualTo(100);
-        // org.assertj.core.api.Assertions.assertThat(responseBody.getUsername()).isEqualTo("ana@email.com");
-        // org.assertj.core.api.Assertions.assertThat(responseBody.getRole()).isEqualTo("ADMIN");
     
     }
 
